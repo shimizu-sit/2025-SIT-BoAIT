@@ -1,0 +1,35 @@
+/* @theme mytheme */
+@import "default";
+
+/* フォントの設定 */
+section{
+  /*font-family: "Bizin Gothic Discord NF";*/
+  /*font-family: "Noto Sans Mono CJK JP";*/
+  /*font-family: "Noto Sans JP";*/
+  /*font-family: "Pending Mono HWNF";*/
+  font-family: "Maple Mono Normal NF CN";
+  /*width: 1600px; /* スライドの幅を指定 */
+  /*height: 900px; /* スライドの高さを指定 */
+}
+
+/* テーブルを中央揃えにする設定 */
+
+section table {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 画像を中央揃えにする設定 */
+section img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* フッターを非表示にする設定 */
+/* markdownに<!-- _class: no-footer --> をいれる */
+section.no-footer {
+  footer {
+    display: none;
+  }
+}
