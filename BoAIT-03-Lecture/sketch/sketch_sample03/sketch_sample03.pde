@@ -3,6 +3,7 @@ void setup() {
 }
 
 void draw() {
+  translate(width/2, height/2, 0);
   box(200);
-  save("sample02.png");
+  save("sample03.png");
 }

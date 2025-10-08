@@ -26,19 +26,20 @@ footer: Basics of Applied Information Technology | T.Shimizu © 2025
 
 ---
 
-# 授業内容
-- 前回復習／今日の到達目標
-- P3Dと座標系，カメラ・投影，ライトと材質
-- 3Dスターター（軸＋オービット）
-- ライトの効果確認（環境光・平行光・点光源）
-- テクスチャ球（地球）＋自転
-- 課題の要件・提出方法確認
+# 今日のゴール
+
+- `size(..., P3D)` で3Dを開始
+- **translate で原点を中央**に置ける
+- マウスドラッグで**物体を回す**（ターンテーブル）
+- `ambientLight / directionalLight / pointLight` を使える
+- `specular / shininess` を使える
+- `createShape(SPHERE).setTexture(img)` で**球にテクスチャ**を貼れる
 
 ---
 
 # 講義メモ（要点）
 - P3Dレンダラ：`size(w,h,P3D)`
-- 座標系：右手系（+X 右, +Y 下, +Z 手前）
+- 座標系：+X 右, +Y 下, +Z 手前
 - カメラ：`camera(ex,ey,ez, cx,cy,cz, ux,uy,uz)`
 - 投影：`perspective(fovy, aspect, near, far)／ortho()`（平行投影）
 - ライト：`ambientLight`（全体持ち上げ），`directionalLight`（方向一定），`pointLight`（位置から放射）
@@ -54,304 +55,338 @@ footer: Basics of Applied Information Technology | T.Shimizu © 2025
 - UnrealEngine：左手系，Z-up
 - Blender：右手系，Z-up
 - Maya：右手系，Y-up
-- Processing：左手系，Y-up(?)
+- Processing：左手系，Y-up(?)Y-down(?)
 
 ---
 
-# Step 1：2D最小テンプレ（確認）
+# ステップ1：2D -> 3Dへ
+
+- `size()`に3Dレンダラーを指定する
 
 ```processing
 void setup(){
-  size(854, 480);   // まずは2D（P3Dなし）
+  size(1280, 720, P3D);
 }
+
 void draw(){
-  background(245);
-  ellipse(mouseX, mouseY, 60, 60);
 }
 ```
 
-**ポイント**：`setup()` は1回，`draw()` は毎フレーム，状態（`fill/stroke`）は**上書き型**
+この状態では，見た目は3Dも2Dも変わらない
 
 ---
 
-# Step 2：P3Dに切り替える（3D起動）
+# ステップ1：2D -> 3Dへ
+
+![w:800](./img/sample01.png)
+
+---
+
+# ステップ2：`box()`で立方体の描画
+
+- `box()`で３次元空間に立方体を描画する
+- 引数：立方体の１辺の長さ
 
 ```processing
 void setup(){
-  size(854, 480, P3D);  // ← 3Dレンダラ
+  size(1280, 720, P3D);
 }
+
 void draw(){
-  background(12);
+  box(200);
+}
+```
+
+---
+
+# ステップ2：`box()`で立方体の描画
+
+想像していた感じに描画されません
+
+![w:800](./img/sample02.png)
+
+---
+
+# ステップ3：`translate()`で原点を移動
+
+- `translate ()`で原点をキャンバスの左上から中央に移動する
+- 3次元になったので引数は３つ：`(x,y,z)`
+
+```processing
+void setup(){
+  size(1280, 720, P3D);
+}
+
+void draw(){
   translate(width/2, height/2, 0);
-  box(120);            // まずは描けることを確認
+  box(200);
 }
 ```
 
-**ポイント**：3Dでは奥行き（Z）が有効。まだカメラもライトも未設定
+---
+
+# ステップ3：`translate()`で原点を移動
+
+真正面なので**立方体**が正方形に見えます
+
+![w:800](./img/sample03.png)
 
 ---
 
-# Step 2：P3Dに切り替える（3D起動）
+# ステップ4：`rotate()`で回転を加える
 
-![w:800](./img/fig01-sample02.png)
+- 3次元になると回転させる軸を指定する必要がある
+- `roateX(),rotateY(),rotateZ()`
+
+
+```processing
+float angle = 0; // 回転角
+// void setup(){} 省略
+void draw() {
+  background(12); // 背景色を設定
+  translate(width/2, height/2, 0);
+
+  rotateX(angle);       // X軸方向にangleだけ回転
+  rotateY(angle * 0.8); // Y軸方向にangle x 0.8 だけ回転
+
+  box(200);
+  angle += 0.01; // angleを微増してゆっくり回転させる
+}
+```
 
 ---
 
-# Step 3：座標軸を描く（空間の把握）
+# ステップ4：`rotate()`で回転を加える
+
+これで3次元ぽくなった
+
+![w:800](./img/sample04.png)
+
+---
+
+# ステップ5：`mouseDragged()`でマウス操作
+
+- `mouseDragged()`：マウスボタンを押したまま動かしたときに実行
+
+```processing
+float angX, angY; // 回転角（X軸用とY軸用）
+// void setup(){} 省略
+void draw() {
+  // 省略
+  rotateX(angX);  // rotateXにはangXを設定
+  rotateY(angY);  // rotateYにはangYを設定
+}
+
+void mouseDragged() {
+  angX -= (mouseY - pmouseY) * 0.01; // 左右移動で水平回転
+  angY += (mouseX - pmouseX) * 0.01; // 上下移動で上下回転
+}
+```
+
+---
+
+# ステップ5：`mouseDragged()`でマウス操作
+
+マウスドラッグしている間立方体が回転する
+
+![w:800](./img/sample05.png)
+
+---
+
+# ステップ6：`drawAxes()`を作成して軸の追加
+
+- `drawAxes()`を作成して軸線を描画する
+
+```processing
+void drawAxes(float s) { // s:軸線の長さ
+  strokeWeight(6);
+  stroke(255, 60, 60);
+  line(0, 0, 0, s, 0, 0);   // +X（赤）
+  stroke(60, 255, 60);
+  line(0, 0, 0, 0, s, 0);   // +Y（緑）
+  stroke(60, 120, 255);
+  line(0, 0, 0, 0, 0, s);   // +Z（青）
+}
+```
+
+---
+
+# ステップ6：`drawAxes()`を作成して軸の追加
+
+![w:800](./img/sample06.png)
+
+---
+
+# ステップ7：Z軸の移動を追加
+
+- キー入力でZ軸の移動を追加する
+
+```processing
+float angX, angY; // 回転角（X軸用とY軸用）
+float distZ = -400; // Z軸へ引く（手前が+Z, 奥が-Z）
+
+void draw(){
+  background(12);
+  translate(width/2, height/2, 0); // 原点を画面中央へ
+  translate(0, 0, distZ);          // Z軸方向への移動
+}
+
+void keyPressed(){
+  if(key=='w') distZ += 20; // 近づく（Zを0に近づける）
+  if(key=='s') distZ -= 20; // 遠ざかる（より負に）
+}
+```
+
+---
+
+# ステップ7：Z軸の移動を追加
+
+![w:800](./img/sample07.png)
+
+---
+
+# ライティングの基本
+
+- **環境光**：`ambientLight(r,g,b)`（全体を持ち上げる）
+- **平行光**：`directionalLight(r,g,b, nx,ny,nz)`（一定方向）
+- **点光源**：`pointLight(r,g,b, x,y,z)`（位置から放射）
+- **材質**：`specular(r,g,b)`（ハイライト色）, `shininess(v)`（鋭さ）
+
+わかりやすく解説しているサイト
+https://tomoto335.hatenablog.com/entry/processing-3dcg-lighting
+
+---
+
+<!-- _class: no-footer -->
+
+# ライティングの基本（光の種類）
+
+![](./img/lighting-01.png)
+
+
+<div style="font-size: 18px;">画像元：<a href="https://tomoto335.hatenablog.com/entry/processing-3dcg-lighting">https://tomoto335.hatenablog.com/entry/processing-3dcg-lighting</a></div>
+
+---
+
+# ライティングの基本
 
 ```processing
 void draw(){
   background(12);
-  drawAxes(200);       // 自前の座標軸関数
-}
-void drawAxes(float s){
-  strokeWeight(3);
-  stroke(255,60,60);  line(0,0,0, s,0,0);   // X（赤）
-  stroke(60,255,60);  line(0,0,0, 0,s,0);   // Y（緑）
-  stroke(60,120,255); line(0,0,0, 0,0,s);   // Z（青）
-}
-```
 
-**ポイント**：Processingは**右手系**（+X右、+Y下、+Z手前）。軸を常に出すと迷子防止。
+  ambientLight(32,32,32); // 環境光RGBの値
+  directionalLight(220,220,220, -1,-1,-1); // 平行光RGB,光の方向
 
----
+  translate(width/2, height/2, 0); translate(0, 0, distZ);
+  rotateX(angX); rotateY(angY);
 
-## Step 4：カメラを設定する（原点を見る）
+  noStroke();
+  fill(120,140,220);  // 拡散色
+  specular(255);      // 鏡面色
+  shininess(40);      // 鋭さ
 
-```java
-float camR=480, theta=PI/4, phi=PI/3;
-void draw(){
-  background(12);
-  float ex = camR*sin(phi)*cos(theta);
-  float ey = camR*cos(phi);
-  float ez = camR*sin(phi)*sin(theta);
-  camera(ex,ey,ez, 0,0,0, 0,1,0);   // 視点→原点、上方向Y
+  box(200);
   drawAxes(240);
 }
-void mouseDragged(){
-  theta += (mouseX-pmouseX)*0.01;
-  phi   -= (mouseY-pmouseY)*0.01;
-  phi = constrain(phi, 0.05, PI-0.05);
-}
-void keyPressed(){ if(key=='w') camR-=20; if(key=='s') camR+=20; camR=constrain(camR,120,2000);}
 ```
-
-**ポイント**：球座標で簡易オービット。`camera(eye, center, up)` の3ベクトルを理解。
 
 ---
 
-## Step 5：投影（透視／平行）を切り替える
+# ライティングの基本
 
-```java
-boolean useOrtho = false;
-void draw(){
-  background(12);
-  // ... cameraはStep 4のまま
-  if(useOrtho) ortho();
-  else         perspective(radians(60), (float)width/height, 1, 5000);
-  drawAxes(240);
-  pushMatrix(); translate(0,0,0); box(100); popMatrix();
-}
-void keyPressed(){
-  if(key=='o') useOrtho = !useOrtho;  // 透視⇄平行の切替
-}
-```
-
-**ポイント**：遠近感が強すぎる→`fovy` を小さく。Zファイティング→`near` を遠ざける。
+![w:800](./img/sample08.png)
 
 ---
 
-## Step 6：変換の順序と `push/pop`
+# 点光源を動かす（ライトだけ動かす）
 
-```java
-void draw(){
-  background(12);
-  // camera / projection は既存のまま
-  drawAxes(240);
-
-  pushMatrix();                // 親のローカル座標
-  translate(-150, 0, 0);
-  rotateY(frameCount*0.02);
-  box(80);
-  popMatrix();
-
-  pushMatrix();                // もう一つ（兄弟）
-  translate(150, 0, 0);
-  rotateX(frameCount*0.02);
-  box(80);
-  popMatrix();
-}
-```
-
-**ポイント**：`translate → rotate → scale` の順序で結果が変わる。オブジェクトごとに `push/pop`。
-
----
-
-## Step 7：階層変換（親子関係）
-
-```java
-void draw(){
-  background(10);
-  // camera / projection は既存のまま
-  drawAxes(240);
-
-  // 太陽（親）
-  pushMatrix();
-  noStroke(); fill(255,180,60);
-  sphere(40);
-
-  // 地球（子：親に対する相対変換）
-  rotateY(frameCount*0.01);
-  translate(200,0,0);
-  pushMatrix(); fill(80,160,255); sphere(20);
-
-    // 月（孫）
-    rotateY(frameCount*0.03);
-    translate(60,0,0); fill(220); sphere(8);
-  popMatrix();
-  popMatrix();
-}
-```
-
-**ポイント**：**親に対する相対**で動く。モデル行列を積んでいくイメージ。
-
----
-
-## Step 8：ライト（環境光＋平行光）
-
-```java
-void draw(){
-  background(10);
-  // camera / projection は既存のまま
-  ambientLight(32,32,32);                    // 全体の持ち上げ
-  directionalLight(220,220,220, -1,-1,-1);   // 太陽光
-  noStroke(); specular(255); shininess(40);
-  // 物体たちを描画（Step 6/7 のシーンなど）
-}
-```
-
-**ポイント**：真っ黒問題は**ライト不足**が原因なことが多い。`specular/shininess` でハイライト。
-
----
-
-## Step 9：点光源を動かす（見えの変化）
-
-```java
+```processing
 float t;
 void draw(){
-  background(8); t += 0.02;
+  background(10);
+
   ambientLight(24,24,24);
-  float lx = 400*cos(t), lz = 400*sin(t);
-  pointLight(255,255,255, lx, 200, lz);  // 点光源が周回
-  // 目印
-  pushMatrix(); translate(lx,200,lz); emissive(255,220,180); sphere(6); popMatrix();
-  // オブジェクト
-  specular(255); shininess(50); fill(200); sphereDetail(48); sphere(140);
+  t += 0.02;
+  float lx = 300*cos(t), lz = 300*sin(t);
+  pointLight(255,255,255, lx, 120, lz);
+
+  translate(width/2, height/2, 0);
+  translate(0, 0, distZ);
+  rotateX(angX); rotateY(angY);
+
+  noStroke(); specular(255); shininess(60);
+  fill(200); sphereDetail(56); sphere(150);
 }
 ```
 
-**ポイント**：距離減衰は固定的（古典パイプライン相当）。強すぎるときは色を落とす。
+---
+
+# 点光源を動かす（ライトだけ動かす）
+
+![w:800](./img/sample09.png)
 
 ---
 
-## Step 10：材質（マテリアル）の直感調整
+# 球にテクスチャを貼る
 
-```java
-void draw(){
-  // ... ライト設定後
-  specular(255,255,255);    // 鏡面の色（白いハイライト）
-  shininess(10);            // 小→広く柔らかい
-  // shininess(80);         // 大→鋭い
-  fill(80,160,255);         // 拡散色（ベースカラー）
-  sphere(120);
-}
-```
+```processing
+PImage earthImg;
+PShape globe;
 
-**ポイント**：`fill` と `specular` は別。`shininess` は「ハイライトの鋭さ」。
-
----
-
-## Step 11：テクスチャを球に貼る（PShape）
-
-```java
-PImage earthImg; PShape globe; float ry;
-void setup(){
-  size(1280,720,P3D); smooth(8);
-  earthImg = loadImage("earth.jpg");   // data/ に配置
+void setup() {
+  size(1280, 720, P3D);
+  earthImg = loadImage("earth.png");    // data/ に配置
   globe = createShape(SPHERE, 160);
   globe.setTexture(earthImg);
   globe.setStroke(false);
-  sphereDetail(64);
 }
-void draw(){
+
+void draw() {
   background(10);
-  // camera / projection / light は既存
-  pushMatrix();
-  rotateY(ry); ry += 0.01; // 自転
+  translate(width/2, height/2, 0);
   shape(globe);
-  popMatrix();
 }
 ```
 
-**ポイント**：`sphere()` へ直接 `texture()` は不可。**`PShape(SPHERE)`＋`setTexture`** が簡便。
+---
+
+# 球にテクスチャを貼る
+
+![w:800](./img/sample10b.png)
 
 ---
 
-## Step 12（任意）：雲レイヤ＆簡易大気
+# 課題（第3回の提出物）
 
-```java
-PImage clouds; PShape cloudLayer;
-void setup(){
-  // ... globe 生成後
-  clouds = loadImage("clouds.png"); // 透過PNG
-  cloudLayer = createShape(SPHERE, 163);
-  cloudLayer.setTexture(clouds);
-  cloudLayer.setStroke(false);
-}
-void draw(){
-  // ... 地球の描画後
-  pushMatrix();
-  rotateY(-ry*1.2);  // 相対的にずらす
-  tint(255, 220);    // うっすら
-  shape(cloudLayer);
-  noTint();
-  popMatrix();
-}
-```
+**テーマ：テクスチャ地球のデモ**
 
-**ポイント**：`tint()` は描画直前のみ有効。終わったら `noTint()`。
+* **必須要件**
+
+  1. `createShape(SPHERE)+setTexture` で地球テクスチャ
+  2. **自転**（物体の `rotateY`）と **ライト移動**（点光 or 平行光）
+  3. `README.md`（実行/操作/環境）＋ **30–60秒動画**
+* **加点要素**：雲レイヤ／UI（キーで自転速度・ライト色）／`saveFrame` でスクショ
 
 ---
 
-## Step 13：便利機能（保存・解像度・ディテール）
+# 課題（第3回の提出物）
 
-* `saveFrame("shot-####.png")`：連番スクショ。
-* `pixelDensity(displayDensity())`：高DPIでのにじみ対策。
-* `sphereDetail(n)`：球メッシュの分割数（**品質と負荷**のトレードオフ）。
+![w:800](./img/sample10.png)
 
 ---
 
-## Step 14：トラブル対処（チェックリスト）
+# 提出・締切
 
-* **真っ黒**：`ambientLight` を増やす／`fill` が黒でないか。
-* **ハイライト無し**：`specular()` と `shininess()` を設定。
-* **テクスチャ不可**：`data/` に画像／ファイル名・拡張子。
-* **カメラが裏返る**：`up(0,1,0)` を維持／`phi` の範囲を制限。
-* **Zが破綻**：`perspective` の `near` を遠く、`far` を近く。
-
+* 提出先：[Moodle](https://moodle2025.shonan-it.ac.jp/mod/assign/view.php?id=38004)
+* 提出物：Processingファイル（xxxxx.pde），実行動画
+* 締切：**10月13日(月) 21:00**（厳守）
+* 
 ---
 
-## Step 15：小課題（チェックアウト）
+## トラブルシューティング
 
-1. `o` キーで **透視⇄平行** を切替、違いをスクショ2枚で説明。
-2. 点光源の高さ（Y）を `sin` で上下させ、**見え方の変化**を1文で記述。
-3. 地球テクスチャに**雲レイヤ**を重ね、`tint` の値を2種試す（220 と 160）。
-
----
-
-## 付録：用語の最短定義
-
-* **カメラ（View変換）**：世界座標→カメラ座標の変換（視点・注視点・上方向）。
-* **投影（Projection）**：3D→2Dへの写像（透視／平行）。
-* **モデル変換（Model）**：物体のローカル座標→世界座標へ。親子関係は**相対変換の積**。
-* **材質**：拡散色（`fill`）／鏡面（`specular`）／鋭さ（`shininess`）。
+* **真っ黒**：`ambientLight` を増やす／`fill` が黒でないか
+* **ハイライト無し**：`specular()` と `shininess()` を設定
+* **テクスチャ貼れない**：`data/` に画像／ファイル名・拡張子
+* **奥行き感が弱い**：少し**回す**、`sphereDetail(≥48)`、ライト方向を斜めに
+* **重い**：`smooth(4)`／ウィンドウを小さく／`sphereDetail` を下げる

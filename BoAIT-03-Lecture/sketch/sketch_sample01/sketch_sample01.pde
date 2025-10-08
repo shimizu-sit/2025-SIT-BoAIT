@@ -1,8 +1,7 @@
 void setup() {
-  size(854, 480);
+  size(1280, 720, P3D);
 }
 
 void draw() {
-  background(245);
-  ellipse(mouseX, mouseY, 60, 60);
+  save("sample01.png");
 }
