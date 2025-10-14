@@ -25,24 +25,26 @@ footer: Basics of Applied Information Technology | T.Shimizu © 2025
 ---
 
 # 今日のゴール
-- `frameCount/millis()` と時間更新（`Δt`） の考え方を説明できる
+- `frameCount/millis()` と時間更新（`Δt` (`Δ`=デルタ)） の考え方を説明できる
 - `PVector` を用いた `pos` / `vel` / `acc` の更新が書ける
 - 粒子クラスとエミッタを自作し，寿命・フェード・重力・反発を実装できる
 
 ---
 
-前回の復習（要点）
-	•	size(..., P3D)／translate/rotate で3Dの見え方を体験
-	•	ライト（ambient / directional / point）と材質（specular / shininess）
-	•	PShape(SPHERE).setTexture(img) で球にテクスチャ
+# 前回の復習（要点）
+- `size(..., P3D)` / `translate` / `rotate` で3Dの見え方を体験
+- ライト（`ambient` / `directional` / `point`）
+- 材質（`specular` / `shininess`）
+- `PShape(SPHERE).setTexture(img)` で球にテクスチャ
 
 ---
 
-1) アニメーションの最小原則
-	•	毎フレーム：状態を更新 → 画面を描く
-	•	状態：位置 x,y、速度 vx,vy、（必要なら加速度 ax,ay）
-	•	壁反射：画面端に当たったら速度の符号を反転
+# アニメーションの最小原則
+- 毎フレーム：状態を更新 → 画面を描く
+- 状態：位置 `x`,`y`, 速度 `vx`,`vy`,（必要なら加速度 `ax`,`ay`）
+- 壁反射：画面端に当たったら速度の符号を反転
 
+```processing
 float x=200, y=200, vx=3, vy=2;
 void setup(){ size(854,480); }
 void draw(){
@@ -53,34 +55,38 @@ void draw(){
   noStroke(); fill(40,120,220);
   ellipse(x, y, 30, 30);
 }
-
+```
 
 ---
 
-2) Δt（デルタタイム）で滑らかに
-	•	PCごとにフレーム間隔が違っても速度が一定に保てる
-	•	Δt = （今回の millis() − 前回の millis()）/ 1000.0
+# `Δt`（デルタタイム）で滑らかに
+- PCごとにフレーム間隔が違っても速度が一定に保てる
+- `Δt = （今回の millis() − 前回の millis()）/ 1000.0`
 
-int pm;             // 前フレームの millis
+```processing
+int pm; // 前フレームの millis
 float x=200, vx=200; // 速度は「px/秒」
 void setup(){ size(854,480); pm = millis(); }
 void draw(){
   int now = millis();
-  float dt = (now - pm) / 1000.0; pm = now;
+  float dt = (now - pm) / 1000.0;
+  pm = now;
   background(245);
   x += vx * dt;                 // 秒あたり速度 × 経過秒
   if(x<15 || x>width-15) vx*=-1;
   ellipse(x, height*0.5, 30,30);
 }
-
+```
 
 ---
 
-3) PVector 入門：pos / vel / acc
-	•	PVector は 2D/3D ベクトル。加算・スカラー倍・正規化などが便利
-	•	運動の基本：vel.add(acc); pos.add(vel); acc.mult(0);
+# `PVector` 入門：`pos` / `vel` / `acc`（前半）
+- `PVector` は 2D/3D ベクトル．加算・スカラー倍・正規化などが便利
+- 運動の基本：`vel.add(acc); pos.add(vel); acc.mult(0);`
 
+```processing
 PVector pos, vel, acc, gravity;
+int pm;
 void setup(){
   size(854,480);
   pos = new PVector(width*0.5, 80);
@@ -88,7 +94,13 @@ void setup(){
   acc = new PVector();
   gravity = new PVector(0, 400); // px/秒^2
 }
-int pm;
+```
+
+---
+
+# `PVector` 入門：`pos` / `vel` / `acc`(後半)
+
+```processing
 void draw(){
   float dt = (millis()-pm)/1000.0; pm = millis();
   background(250);
@@ -105,12 +117,15 @@ void draw(){
   noStroke(); fill(20,120,220);
   ellipse(pos.x, pos.y, r*2, r*2);
 }
-
+```
 
 ---
 
-4) 粒子クラスを作る（寿命とフェード）
+<!-- _class: no-footer -->
 
+# 粒子クラスを作る（寿命とフェード）
+
+```processing
 class Particle{
   PVector pos, vel; float life; color col; float r;
   Particle(PVector origin){
@@ -133,12 +148,13 @@ class Particle{
   }
   boolean dead(){ return life<=0; }
 }
-
+```
 
 ---
 
-5) エミッタで粒子を管理する
+# エミッタで粒子を管理する
 
+```processing
 ArrayList<Particle> ps = new ArrayList<>();
 PVector emitter;
 int pm;
@@ -158,24 +174,26 @@ void draw(){
   stroke(80); noFill(); ellipse(emitter.x, emitter.y, 16,16);
 }
 void mouseMoved(){ emitter.set(mouseX, mouseY); } // 移動可能
-
+```
 
 ---
 
-6) 応用1：床反発・摩擦・天井制限
-	•	反発：vy = -abs(vy) * 反発係数
-	•	摩擦：vel.mult(0.98);（床接触時）
-	•	上限：vel.limit(maxSpeed);
+# 応用1：床反発・摩擦・天井制限
+- 反発：`vy = -abs(vy) * 反発係数`
+- 摩擦：`vel.mult(0.98);`（床接触時）
+- 上限：`vel.limit(maxSpeed);`
 
+```processing
 // Particle.update 内に追加例
 if(pos.y>height-5){ pos.y=height-5; vel.y = -abs(vel.y)*0.6; vel.mult(0.9); }
 vel.limit(600);
-
+```
 
 ---
 
-7) 応用2：マウス反発（簡易フォース）
+# 応用2：マウス反発（簡易フォース）
 
+```processing
 void repelFromMouse(Particle p){
   PVector dir = PVector.sub(p.pos, new PVector(mouseX, mouseY));
   float d = max(dir.mag(), 1);
@@ -184,48 +202,33 @@ void repelFromMouse(Particle p){
   p.vel.add(PVector.mult(dir, strength * (1.0/60.0))); // 簡易 dt
 }
 // draw 内、p.update の前で適用してもOK
-
-
----
-
-8) パフォーマンスのコツ
-	•	粒子数を絞る：まずは 200〜1000 程度で 60FPS を目標
-	•	生成の再利用：必要に応じて プール（使い回し）を検討
-	•	noStroke() やウィンドウ縮小、描画分解能（半径/個数）で負荷調整
-	•	リスト削除は後ろから（または removeIf）
+```
 
 ---
 
-ハンズオン（手順）
-	1.	反射ボール（1) を完成
-	2.	PVector 版（3) で重力・床反発
-	3.	粒子クラス（4) とエミッタ（5) を統合
-	4.	仕上げ：色・サイズ・寿命・放出レート・UI（キー）
+# パフォーマンスのコツ
+- 粒子数を絞る：まずは 200〜1000 程度で 60FPS を目標
+- 生成の再利用：必要に応じて プール（使い回し）を検討
+- noStroke() やウィンドウ縮小、描画分解能（半径/個数）で負荷調整
+- リスト削除は後ろから（または removeIf）
 
 ---
 
-課題P3：粒子噴水（提出物）
-	•	必須要件
-	1.	エミッタから粒子を連続放出（1フレームあたり 5 個以上）
-	2.	重力と床反発（減衰あり）を実装
-	3.	寿命とフェード（透明度 or サイズ）
-	4.	200 粒子以上で 滑らかに動作（FPS 目安）
-	5.	README.md（実行/操作/環境）＋ 30–60 秒動画
-	•	加点
-	•	マウス反発／ノイズ風／色のライフサイクル／放出レートUI／スクショ保存
-	•	提出名：CG-Grad-2025-学籍番号-P3-Fountain
+# ハンズオン（手順）
+1. 反射ボールを完成
+2. PVector 版で重力・床反発
+3. 粒子クラスとエミッタを統合
+4. 仕上げ：色・サイズ・寿命・放出レート・UI（キー）
 
 ---
 
-ルーブリック（抜粋）
-
-観点	C	B	A
-要件充足	一部欠落	全要件達成	全要件＋小改良
-動作安定	頻繁に落ちる/重い	概ね安定	200+粒子で滑らか
-見栄え/UI	最低限	配色/演出よし	色/寿命/UIが洗練
-実装明瞭さ	動くが読みにくい	命名/分割が適切	コメント充実・再利用性あり
-再現性	曖昧	READMEあり	一発実行・動画良質
-
+# 課題：粒子噴水（提出物）
+- 必須要件
+  1. エミッタから粒子を連続放出（1フレームあたり 5 個以上）
+	2. 重力と床反発（減衰あり）を実装
+	3. 寿命とフェード（透明度 or サイズ）
+	4. 200 粒子以上で 滑らかに動作（FPS 目安）
+	5. 実行時の動画
 
 ---
 
