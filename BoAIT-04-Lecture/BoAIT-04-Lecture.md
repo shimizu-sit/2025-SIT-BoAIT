@@ -59,9 +59,64 @@ void draw(){
 
 ---
 
-# `Δt`（デルタタイム）で滑らかに
-- PCごとにフレーム間隔が違っても速度が一定に保てる
-- `Δt = （今回の millis() − 前回の millis()）/ 1000.0`
+# アニメーションの最小原則
+
+![w:800](./img/samele01.png)
+
+---
+
+# Δt（デルタタイム）で滑らかに
+
+
+フレーム依存をなくして“同じ速さ”を保つ
+- 目的：PCごとのフレーム間隔の違いに影響されず、一定の速度/挙動を実現する
+- 式：`Δt = (millis()_now - millis()_prev) / 1000.0` （秒）
+- 実装方針：状態更新は`物理単位（px/秒 等）× 経過時間`（秒）
+- `millis()`：スケッチの開始からの経過時間（ミリ秒単位、1000分の1秒）を返す
+
+---
+
+# なぜ必要？（フレーム依存の問題）
+- 「毎フレーム x += 3;」はFPSが高いほど速くなる
+- 例：60FPS → 1秒で 3×60 = 180px、30FPS → 1秒で 90px
+- 対策：フレームではなく時間にもとづいて移動量を計算
+- Unityの`Update()`と`FixedUpdate()`の違いに近い
+
+---
+
+# なぜ必要？（フレーム依存の問題）
+
+
+### フレーム依存（よくない例）
+```processing
+float x=0; void draw(){ x += 3; }
+```
+
+### 時間依存（Δt導入）
+```processing
+int pm = 0;
+float x=0, vx=180; // 180px/秒
+void setup(){ size(854,480); pm = millis(); }
+void draw(){
+  int now = millis();
+  float dt = (now - pm) / 1000.0; pm = now; // 秒
+  x += vx * dt; // 1秒で 180px 進む（FPSに無関係）
+}
+```
+
+---
+
+# Δt の正体と単位
+- `millis()`：起動からの経過ミリ秒（int）
+- `dt（秒） = (now - pm) / 1000.0`
+- 速度 `vx` は `px/秒`、加速度 `ax` は `px/秒^2` に統一
+- 更新式：（オイラー法）
+- `vel += acc * dt`
+- `pos += vel * dt`
+
+---
+
+# Δt（デルタタイム）で滑らかに
 
 ```processing
 int pm; // 前フレームの millis
@@ -80,6 +135,12 @@ void draw(){
 
 ---
 
+# Δt（デルタタイム）で滑らかに
+
+![w:800](./img/sample03.png)
+
+---
+
 # `PVector` 入門：`pos` / `vel` / `acc`（前半）
 - `PVector` は 2D/3D ベクトル．加算・スカラー倍・正規化などが便利
 - 運動の基本：`vel.add(acc); pos.add(vel); acc.mult(0);`
@@ -89,10 +150,11 @@ PVector pos, vel, acc, gravity;
 int pm;
 void setup(){
   size(854,480);
-  pos = new PVector(width*0.5, 80);
-  vel = new PVector(80, 0);
-  acc = new PVector();
-  gravity = new PVector(0, 400); // px/秒^2
+  pm = millis();
+  pos = new PVector(0, 80); // 初期位置
+  vel = new PVector(40, 0); // 初期速度
+  acc = new PVector(); // 加速度
+  gravity = new PVector(0, 800); // px/秒^2
 }
 ```
 
@@ -121,13 +183,20 @@ void draw(){
 
 ---
 
-<!-- _class: no-footer -->
+# `PVector` 入門：`pos` / `vel` / `acc`
 
-# 粒子クラスを作る（寿命とフェード）
+![w:800](./img/sample04.png)
+
+---
+
+# 粒子クラスを作る（寿命とフェード）(前半)
 
 ```processing
 class Particle{
-  PVector pos, vel; float life; color col; float r;
+  PVector pos, vel;
+  float life;
+  color col;
+  float r;
   Particle(PVector origin){
     pos = origin.copy();
     vel = PVector.random2D().mult(random(80, 240)); // px/秒
@@ -135,6 +204,15 @@ class Particle{
     r = random(3,8);
     col = color(random(180,240), random(120,180), 255);
   }
+  // つづく
+```
+
+---
+
+# 粒子クラスを作る（寿命とフェード）(後半)
+
+```processing
+  // つづき
   void update(float dt){
     // 重力＋減衰
     vel.y += 400*dt;
@@ -143,16 +221,23 @@ class Particle{
   }
   void draw(){
     float a = constrain(life, 0, 1);
-    noStroke(); fill(col, 255*a);
+    noStroke(); 
+    fill(col, 255*a);
     ellipse(pos.x, pos.y, r*2, r*2);
   }
-  boolean dead(){ return life<=0; }
+  boolean dead(){
+    return life<=0;
+  }
 }
 ```
 
 ---
 
+<!-- _class: no-footer -->
+
 # エミッタで粒子を管理する
+
+- **エミッタ**：粒子を発生させる"**発生源**"
 
 ```processing
 ArrayList<Particle> ps = new ArrayList<>();
@@ -178,47 +263,40 @@ void mouseMoved(){ emitter.set(mouseX, mouseY); } // 移動可能
 
 ---
 
-# 応用1：床反発・摩擦・天井制限
+# 粒子クラスを作りエミッタで粒子を管理する
+
+![w:800](./img/sample05.png)
+
+---
+
+# 応用：床反発・摩擦・天井制限
 - 反発：`vy = -abs(vy) * 反発係数`
 - 摩擦：`vel.mult(0.98);`（床接触時）
 - 上限：`vel.limit(maxSpeed);`
 
 ```processing
 // Particle.update 内に追加例
-if(pos.y>height-5){ pos.y=height-5; vel.y = -abs(vel.y)*0.6; vel.mult(0.9); }
+if(pos.y>height-5){
+  pos.y=height-5;
+  vel.y = -abs(vel.y)*0.6;
+  vel.mult(0.9);
+  }
 vel.limit(600);
 ```
 
 ---
 
-# 応用2：マウス反発（簡易フォース）
+# 応用：床反発・摩擦・天井制限
 
-```processing
-void repelFromMouse(Particle p){
-  PVector dir = PVector.sub(p.pos, new PVector(mouseX, mouseY));
-  float d = max(dir.mag(), 1);
-  dir.normalize();
-  float strength = 80000 / (d*d); // 1/r^2 で減衰
-  p.vel.add(PVector.mult(dir, strength * (1.0/60.0))); // 簡易 dt
-}
-// draw 内、p.update の前で適用してもOK
-```
+![w:800](./img/sample06.png)
 
 ---
 
 # パフォーマンスのコツ
 - 粒子数を絞る：まずは 200〜1000 程度で 60FPS を目標
 - 生成の再利用：必要に応じて プール（使い回し）を検討
-- noStroke() やウィンドウ縮小、描画分解能（半径/個数）で負荷調整
-- リスト削除は後ろから（または removeIf）
-
----
-
-# ハンズオン（手順）
-1. 反射ボールを完成
-2. PVector 版で重力・床反発
-3. 粒子クラスとエミッタを統合
-4. 仕上げ：色・サイズ・寿命・放出レート・UI（キー）
+- `noStroke()` やウィンドウ縮小、描画分解能（半径/個数）で負荷調整
+- リスト削除は後ろから（または `removeIf`）
 
 ---
 
@@ -232,17 +310,17 @@ void repelFromMouse(Particle p){
 
 ---
 
-トラブルシューティング
-	•	重い：粒子数/半径を減らす、noStroke()、ウィンドウ縮小
-	•	消えない：life の減らし方を確認、削除は後ろから
-	•	跳ねすぎ：反発係数を 0.5〜0.8 に、vel.limit() を併用
-	•	カクつく：Δt を導入、または frameRate(60) の確認
+# トラブルシューティング
+- 重い：粒子数/半径を減らす，`noStroke()`，ウィンドウ縮小
+- 消えない：`life`の減らし方を確認，削除は後ろから
+- 跳ねすぎ：反発係数を `0.5〜0.8` に，`vel.limit()` を併用
+- カクつく：`Δt` を導入，または `frameRate(60)` の確認
 
 ---
 
-付録：よく使う PVector API
-	•	PVector.add/sub/mult/div（加減乗除）
-	•	PVector.normalize()（長さを1に）
-	•	PVector.limit(max)（速度上限）
-	•	PVector.random2D()（ランダム方向）
-	•	PVector.dist(a,b), PVector.dot(a,b)
+# 付録：よく使う PVector API
+- `PVector.add/sub/mult/div`（加減乗除）
+- `PVector.normalize()`（長さを1に）
+- `PVector.limit(max)`（速度上限）
+- `PVector.random2D()`（ランダム方向）
+- `PVector.dist(a,b), PVector.dot(a,b)`
